@@ -63,6 +63,7 @@ def predict_masks_with_builded_sam(
     point_labels = None #np.array(point_labels)
     # print(point_coords)
     box = np.array(box)
+    print(box)
 
     model.set_image(img)
     masks, scores, logits = model.predict(
@@ -81,11 +82,15 @@ def setup_args(parser):
         help="Path to a single input img",
     )
     parser.add_argument(
-        "--point_coords", type=float, nargs='+', required=True,
+        "--point_coords", type=float, nargs='+',
         help="The coordinate of the point prompt, [coord_W coord_H].",
     )
     parser.add_argument(
-        "--point_labels", type=int, nargs='+', required=True,
+        "--box", type=float, nargs='+',
+        help="The coordinate of the box prompt, [x1, y1, x2, y2].",
+    )
+    parser.add_argument(
+        "--point_labels", type=int, nargs='+',
         help="The labels of the point prompt, 1 or 0.",
     )
     parser.add_argument(
@@ -124,20 +129,28 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     img = load_img_to_array(args.input_img)
+    print(args.box)
+    print(type(args.box))
+    # input_box = np.array(args.box)
 
-    masks, _, _ = predict_masks_with_sam(
+    model = build_sam_model(args.sam_model_type, args.sam_ckpt, device)
+    # model.set_image(img)
+    masks, _, _ = predict_masks_with_builded_sam(
+        model,
         img,
-        [args.point_coords],
-        args.point_labels,
-        model_type=args.sam_model_type,
-        ckpt_p=args.sam_ckpt,
-        device=device,
-    )
+        args.box)
+
+    # masks, _, _ = model.predict(
+    #     point_coords=None,
+    #     point_labels=None,
+    #     box=input_box[None, :],
+    #     multimask_output=False,
+    # )
     masks = masks.astype(np.uint8) * 255
 
     # dilate mask to avoid unmasked edge effect
-    if args.dilate_kernel_size is not None:
-        masks = [dilate_mask(mask, args.dilate_kernel_size) for mask in masks]
+    # if args.dilate_kernel_size is not None:
+    #     masks = [dilate_mask(mask, args.dilate_kernel_size) for mask in masks]
 
     # visualize the segmentation results
     img_stem = Path(args.input_img).stem

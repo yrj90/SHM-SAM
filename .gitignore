@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+sam_vit_h_4b8939.pth
+/results/*
+/segment-anything/*
 # C extensions
 *.so
 
